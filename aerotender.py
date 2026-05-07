@@ -101,23 +101,28 @@ def is_may_or_june(due_date_str: str) -> bool:
         return False
     try:
         normalised = due_date_str.strip().replace("/", "-")
-        parts      = normalised.split("-")          # ['18', 'Jun', '2026 10:00 AM']
+        parts      = normalised.split("-")          
         month_str  = parts[1][:3].lower()
-        year       = int(parts[2][:4])
-        month_num  = _MONTH_MAP.get(month_str, 0)
+        
+        # Handle numeric months (e.g., '06' instead of 'jun')
+        if month_str.isdigit():
+            month_num = int(month_str)
+        else:
+            month_num = _MONTH_MAP.get(month_str, 0)
 
-        if month_num == 0:
+        if month_num == 0 or month_num > 12:
             return False
 
-        now           = datetime.now()
-        current_month = now.month
-        current_year  = now.year
+        year       = int(parts[2][:4])
+        now        = datetime.now()
+        curr_month = now.month
+        curr_year  = now.year
 
         # Future year → always include
-        if year > current_year:
+        if year > curr_year:
             return True
         # Same year → include only from current month onward (up to Dec)
-        if year == current_year and month_num >= current_month:
+        if year == curr_year and month_num >= curr_month:
             return True
         return False
 
@@ -494,7 +499,7 @@ def parse_gem_page(soup, keyword):
                     org = el.get_text(strip=True)
                     break
 
-            date_matches = _re.findall(r'\d{2}[-/]\w{3}[-/]\d{4}', raw_text)
+            date_matches = _re.findall(r'\d{2}[-/]\w{1,3}[-/]\d{4}', raw_text)
             tender_date  = date_matches[0] if len(date_matches) > 0 else ""
             due_date_str = date_matches[-1] if len(date_matches) > 1 else ""
 
