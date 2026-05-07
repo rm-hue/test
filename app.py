@@ -18,7 +18,7 @@ import os
 import threading
 from datetime import datetime
 from flask import Flask, jsonify, send_file
-
+import traceback; traceback.print_exc()
 from aerotender import scrape_all, write_excel, OUTPUT_FILE, KEYWORDS
 
 app = Flask(__name__)
@@ -149,21 +149,26 @@ def _run_scraper():
         if tenders:
             write_excel(tenders)
 
-        defproc_count = sum(1 for t in tenders if t.get("Source") == "DefProc")
-        gem_count     = sum(1 for t in tenders if t.get("Source") == "GeM")
+            defproc_count = sum(1 for t in tenders if t.get("Source") == "DefProc")
+            gem_count     = sum(1 for t in tenders if t.get("Source") == "GeM")
 
-        with _lock:
-            _state["status"]        = "done"
-            _state["tenders_found"] = len(tenders)
-            _state["completed_at"]  = datetime.now().strftime("%H:%M")
+            with _lock:
+                _state["status"]        = "done"
+                _state["tenders_found"] = len(tenders)
+                _state["completed_at"]  = datetime.now().strftime("%H:%M")
 
-            _state["defproc"]["status"]        = "done"
-            _state["defproc"]["tenders_found"] = defproc_count
-            _state["defproc"]["keyword_index"] = len(KEYWORDS)
+                _state["defproc"]["status"]        = "done"
+                _state["defproc"]["tenders_found"] = defproc_count
+                _state["defproc"]["keyword_index"] = len(KEYWORDS)
 
-            _state["gem"]["status"]        = "done"
-            _state["gem"]["tenders_found"] = gem_count
-            _state["gem"]["keyword_index"] = len(KEYWORDS)
+                _state["gem"]["status"]        = "done"
+                _state["gem"]["tenders_found"] = gem_count
+                _state["gem"]["keyword_index"] = len(KEYWORDS)
+        else:
+            # If no tenders found, report as error so the UI doesn't enable download
+            with _lock:
+                _state["status"] = "error"
+                _state["error"]  = "Scraping finished but 0 tenders found. Check Railway logs for Chrome crashes or CAPTCHAs."
 
     except Exception as exc:
         with _lock:
