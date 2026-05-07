@@ -1,0 +1,20 @@
+# railway.toml — Railway deployment configuration
+# Docs: https://docs.railway.app/reference/config-as-code
+
+[build]
+# Use our Dockerfile (required for headless Chrome support)
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Railway injects $PORT automatically; the Dockerfile CMD binds to it.
+# startCommand is intentionally omitted here so the Dockerfile CMD is the
+# single source of truth (avoids duplicate maintenance).
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# Health check — pings /status instead of "/".
+# "/" requires reading tender_ui.html from disk, which can fail and cause
+# Railway to mark the deploy as crashed. /status always returns 200 JSON.
+healthcheckPath = "/status"
+healthcheckTimeout = 10
